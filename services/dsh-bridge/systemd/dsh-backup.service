@@ -1,0 +1,8 @@
+[Unit]
+Description=DSH nightly backup to VPS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dsh-backup.sh

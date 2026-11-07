@@ -1,0 +1,4 @@
+# dsh-skill-library bundle patch
+- insert:
+    - id: skill-library
+      name: 'dsh-skill-library'

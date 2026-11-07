@@ -1,0 +1,10 @@
+[Unit]
+Description=Run DSH backup nightly
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=dsh-backup.service
+
+[Install]
+WantedBy=timers.target

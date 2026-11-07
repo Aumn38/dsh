@@ -1,0 +1,16 @@
+[Unit]
+Description=DSH Memory Agent weekly self-optimization
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=localagent
+Group=localagent
+WorkingDirectory=/opt/localagent
+EnvironmentFile=/opt/localagent/config/agent.env
+Environment=DSH_TELEMETRY_DISABLED=1
+Environment=DSH_TELEMETRY_MODE=DISABLED
+ExecStart=/opt/localagent/dsh-venv/bin/python /opt/localagent/dsh-bridge/dsh_memory_optimize.py
+StandardOutput=journal
+StandardError=journal

@@ -1,0 +1,4 @@
+# dsh-plugin-library bundle patch
+- insert:
+    - id: plugin-library
+      name: 'dsh-plugin-library'

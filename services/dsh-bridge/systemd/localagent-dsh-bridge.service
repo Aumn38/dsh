@@ -1,0 +1,21 @@
+[Unit]
+Description=DSH Control Layer (Telegram bridge)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=localagent
+Group=localagent
+WorkingDirectory=/opt/localagent
+EnvironmentFile=/opt/localagent/config/agent.env
+Environment=DSH_TELEMETRY_DISABLED=1
+Environment=DSH_TELEMETRY_MODE=DISABLED
+ExecStart=/opt/localagent/dsh-venv/bin/python /opt/localagent/dsh-bridge/dsh_bridge.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

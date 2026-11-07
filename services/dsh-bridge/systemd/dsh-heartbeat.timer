@@ -1,0 +1,10 @@
+[Unit]
+Description=Push DSH bridge heartbeat to VPS every 2 minutes
+
+[Timer]
+OnCalendar=*:0/2
+Persistent=true
+Unit=dsh-heartbeat.service
+
+[Install]
+WantedBy=timers.target

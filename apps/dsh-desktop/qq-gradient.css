@@ -1,0 +1,436 @@
+/* DSH Desktop — QQ (im.qq.com) animated gradient background + frosted
+ * composer + dark-glass sidebar (2026-11-07, v1.1.6).
+ *
+ * v1.1.6 makes two changes the user asked for after seeing v1.1.5 live
+ * (he is happy with 1.1.5 — NOT redone):
+ *  (1) The "新会话" (New Conversation) button in the LEFT sidebar is a
+ *      solid dark pill that reads as a flat block against the
+ *      dark-glass sidebar. Give it the same frosted-glass family as
+ *      the sidebar (section 5): dark translucent fill + blur + light
+ *      border + text shadow, so it matches. The button's class is
+ *      .hHd-Xa_newSession (verified in the live DSH 0.2.2-rc.1 bundle,
+ *      dsh-client-ui-sidebar) — a hashed CSS-module class, re-check
+ *      after any DSH version bump. Size/position/function: untouched.
+ *  (2) The top menu bar ("File Edit View Window") is removed. It is
+ *      the Electron native application menu, NOT a DOM element, so CSS
+ *      cannot remove it — this is done in main.js (autoHideMenuBar),
+ *      NOT in this file.
+ *  The RIGHT side (conversation area) is deliberately NOT changed in
+ *  v1.1.6 — the user corrected an earlier misreading ("右边这一块
+ *  不要改啊"): no glass, overlay, or styling is added to the
+ *  conversation/content area.
+ *
+ * v1.1.5 fixes three things the user flagged after seeing v1.1.4 live in a
+ * conversation view (main gradient, sidebar, composer glass already
+ * APPROVED — NOT touched):
+ *  (1) User message bubble ("oi") is a solid dark block that clashes with
+ *      the glass/gradient aesthetic. It is rendered by the primitives
+ *      UserMessageBubble with a stable data-message-bubble attribute
+ *      (verified in the live DSH 0.2.2-rc.1 bundle,
+ *      dsh-client-ui-chat UserContent). Give it the same frosted glass
+ *      as the composer (light glass + near-black text) so it fits.
+ *  (2) Composer in the conversation view: the card IS the same
+ *      [data-composer-card] InputBar (verified — the glass DOES apply);
+ *      what clashes is the solid BLUE send/stop (primary) button
+ *      (class uV2eYG_primary, same CSS module as the card) and, over
+ *      the pale peach bottom of the gradient, the box reading as a flat
+ *      slab. Fix: make the primary send/stop button frosted glass like
+ *      the + button (near-black icon), so the composer reads as glass.
+ *      The + button and the permission/model buttons are NOT touched.
+ *  (3) "深度求索中" status line is faint against the bright gradient.
+ *      It renders as <div data-chat-running> (ChatView running, i18n
+ *      chat.deepDiving/deepDivingFor — verified in the live bundle).
+ *      It stays faint even though section 6 raised the centre-column
+ *      tokens, so it must use its own dimming: raise its text to solid
+ *      white + a subtle dark shadow, and force opacity 1.
+ *
+ * Paste (separate finding, NOT fixable via this CSS injection): the
+ * composer cannot paste while the input gate is busy/locked — DSH's
+ * pasteText drops the paste when gate.current.machineBusy (input phase
+ * adjudicating/submitting/sending) or gate.current.locked (composer
+ * disabled). This is DSH application JS logic; insertCSS cannot change
+ * it. See the report for the root cause, workaround, and what a real
+ * fix would need.
+ *
+ * Earlier versions (for context, see git-less notes in the file):
+ *  v1.1.4 — sidebar opacity 0.55->0.30, content-page font to near-white,
+ *      composer caret to dark (Lexical contenteditable, not textarea);
+ *  v1.1.3 — main background redone as TRUE QQ vertical stripes
+ *      (sampled from the user's im.qq.com screenshot) + dark-glass
+ *      sidebar (approved mockup); v1.1.2 — composer glass redone to
+ *      real frosted glass (0.42->0.30) + glass + button + white menu
+ *      text; v1.1.1 — first frosted-glass composer (0.6 white) +
+ *      black text; v1.1.0 — QQ gradient background only.
+ *
+ * Scope (v1.1.6): "新会话" sidebar button glass (§11) + menu-bar removal
+ * (main.js autoHideMenuBar) ONLY. User bubble, send/stop button,
+ * running-status text, sidebar, main gradient, caret, composer glass,
+ * + button, menu white text, content-page font, fonts, layout,
+ * spacing, and the RIGHT-side conversation area: untouched.
+ *
+ * To revert: restore the 1.1.5 qq-gradient.css from
+ * ~/dsh-desktop.bak-1.1.5/ and the 1.1.5 main.js from the same backup,
+ * rebuild/reinstall (or restore /tmp/app.asar.bak-1.1.5 over
+ * /opt/DeepSeek Harness/resources/app.asar and reopen the app). To
+ * revert only the 新会话 button glass, delete section 11; to revert
+ * only the menu bar, remove autoHideMenuBar from main.js.
+ */
+
+/* 1. Let the gradient show through: main surfaces become transparent. */
+:root,
+body {
+  --dsw-alias-bg-base: transparent !important;
+}
+
+/* 2. QQ vertical-stripe aurora — TRUE replication of im.qq.com
+ *    (sampled from the user's reference screenshot, 930x2048).
+ *    Layer order is bottom-to-top in the list below (last = bottom).
+ *
+ *    BOTTOM layer — broad color regions, left to right (sampled at
+ *    ~25% height, the most saturated band), 100% wide so ALL colors
+ *    are visible at once (blue -> teal peak -> blue -> purple):
+ *      deep blue #2c4a8a -> teal #4490a9 -> bright teal peak #50a7c5
+ *      (x~30%) -> blue #2f5296 / #2d4991 -> purple #463b95 ->
+ *      deep purple #4f409b. NO hot pink: the QQ image has no pink in
+ *      its upper portion; pink appears only as the light bottom wash.
+ *      STATIC (no drift) — the colors must stay in their QQ layout.
+ *    MIDDLE layer — thin vertical stripe texture (the aurora beams):
+ *      repeating-linear-gradient, one stripe per ~3.1% of width
+ *      (~29 px on the 930 px reference, ~32 stripes across). Each
+ *      stripe is a soft sawtooth: a bright edge (white 0.09) fading to
+ *      a darker tail (black 0.06), matching the sampled brightness
+ *      profile. This layer drifts VERY slowly (one stripe width per
+ *      60 s, alternate) so the beams gently flow while the broad
+ *      colors stay put — the only motion, and deliberately subtle.
+ *    TOP layer — peach wash at the bottom: transparent until ~45%,
+ *      fading gradually to the sampled soft peach #eac7b1 (max 0.6
+ *      alpha, so the stripes stay faintly visible through it, as in
+ *      the QQ image). The old wash (orange #ffc78d, 0.55) was too
+ *      orange and too abrupt.
+ *    Honest limit: CSS repeating gradients are perfectly regular,
+ *    while the QQ image's stripes vary slightly in width/intensity
+ *    and the color bands drift with height — that organic irregularity
+ *    cannot be reproduced exactly in CSS. The structure, colors, and
+ *    proportions are sampled 1:1; the texture is a close approximation.
+ */
+html,
+body,
+#root {
+  background-color: #2c4a8a !important;
+  background-image:
+    linear-gradient(180deg, rgba(234, 199, 177, 0) 0%, rgba(234, 199, 177, 0) 45%, rgba(234, 199, 177, 0.25) 60%, rgba(234, 199, 177, 0.45) 75%, rgba(234, 199, 177, 0.6) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.01) 1.2%, rgba(0, 0, 0, 0.06) 3.1%),
+    linear-gradient(90deg, #2c4a8a 0%, #3c8295 12%, #4490a9 22%, #50a7c5 30%, #3f85b3 38%, #2f5296 48%, #2d4991 58%, #326c91 68%, #463b95 78%, #473a94 88%, #4f409b 100%) !important;
+  background-size: 100% 100%, auto, 100% 100% !important;
+  background-attachment: fixed, fixed, fixed !important;
+  background-position: 0 0, 0 0, 0 0 !important;
+  background-repeat: no-repeat, repeat, no-repeat !important;
+  animation: dsh-qq-gradient-flow 60s ease-in-out infinite alternate !important;
+}
+
+@keyframes dsh-qq-gradient-flow {
+  from { background-position: 0 0, 0 0, 0 0; }
+  to { background-position: 0 0, 3.1% 0, 0 0; }
+}
+
+/* 3. Frosted-glass composer (2026-11-07, v1.1.2 redo): the v1.1.1 glass
+ *    (flat rgba white 0.6) read as a solid pastel box, not glass. Real
+ *    frosted glass (per the user's reference image): a barely-there
+ *    surface — the gradient shows through strongly blurred — with a thin
+ *    light border, a bright top edge, and a soft shadow. The card is
+ *    [data-composer-card] (verified in the live DSH 0.2.2-rc.1 bundle,
+ *    dsh-client-ui-conversation InputBar — a stable attribute, NOT a
+ *    hashed class). Black text is KEPT (user's call): the surface stays
+ *    just opaque enough (top-lit gradient 0.42 -> 0.30) for the
+ *    near-black text to stay readable over the bright gradient.
+ *    Font family/size untouched; only the composer card is touched.
+ */
+[data-composer-card] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
+  backdrop-filter: blur(24px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 32px rgba(15, 23, 42, 0.18) !important;
+  /* Black text hierarchy, scoped to the card only (unchanged from 1.1.1): */
+  --dsw-alias-label-primary: rgba(15, 23, 42, 0.92) !important;
+  --dsw-alias-label-secondary: rgba(15, 23, 42, 0.72) !important;
+  --dsw-alias-label-tertiary: rgba(15, 23, 42, 0.55) !important;
+  --dsw-alias-label-caption: rgba(15, 23, 42, 0.45) !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+/* Main input text (near-black) and placeholder hint (lighter black). */
+[data-composer-card] textarea {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+[data-composer-card] textarea::placeholder,
+[data-composer-card] ::placeholder {
+  color: rgba(15, 23, 42, 0.5) !important;
+  opacity: 1 !important;
+}
+
+/* 3b. The + (commands) button ONLY — the round button at the bottom-left
+ *    of the composer. It was a solid dark circle (background:
+ *    var(--dsw-specific-selector)) that clashed with the glass card.
+ *    Same frosted glass as the card, smaller blur (28px button).
+ *    Selector is semantic, NOT the hashed .uV2eYG_add class: this button
+ *    is the ONLY button inside the composer card with
+ *    aria-haspopup="listbox" (Full access / Select model use
+ *    aria-haspopup="menu"; the send button has none) — verified in the
+ *    live bundle. Its + icon is already near-black via the card's
+ *    --dsw-alias-label-primary token; restated explicitly here.
+ *    Every other composer button is deliberately NOT touched.
+ */
+[data-composer-card] button[aria-haspopup="listbox"] {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(12px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 8px rgba(15, 23, 42, 0.12) !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+[data-composer-card] button[aria-haspopup="listbox"]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 4. Command menu white text (2026-11-07): the / menu (File / Goal /
+ *    Plan / Feedback / Compact / Permission / Model) renders into the
+ *    [data-composer-overlay] anchor inside the composer card. Its panel
+ *    (MenuSurface) is a solid dark surface, so white text reads well
+ *    with NO change to the panel background. All menu text colors come
+ *    from the label tokens, so white token overrides scoped to the
+ *    overlay turn every menu label white: item names brightest,
+ *    descriptions dimmer. These direct assignments on the overlay
+ *    element win over the black card tokens inherited from above, for
+ *    the menu subtree only. Search input + placeholder included.
+ */
+[data-composer-overlay] {
+  --dsw-alias-label-primary: rgba(255, 255, 255, 0.95) !important;
+  --dsw-alias-label-secondary: rgba(255, 255, 255, 0.75) !important;
+  --dsw-alias-label-tertiary: rgba(255, 255, 255, 0.55) !important;
+  --dsw-alias-label-caption: rgba(255, 255, 255, 0.45) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-composer-overlay] input {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-composer-overlay] input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1 !important;
+}
+
+/* 5. Dark frosted-glass sidebar (2026-11-07, v1.1.3, approved mockup;
+ *    v1.1.4 opacity fix): The sidebar was a solid black block. The
+ *    sidebar column paints --dsw-specific-sidebar-fill (dark #1b1b1c,
+ *    from --dsw-static-neutral-bluish-900) as its background — verified
+ *    in the live DSH 0.2.2-rc.1 bundle (dsh-client-ui-layout,
+ *    .pI_x6G_sidebarCol { background: var(--dsw-specific-sidebar-fill);
+ *    ... }). v1.1.3 set the token to dark slate 0.55 — that DOES apply
+ *    (the sidebar turned navy, not black), but 0.55 over the deep-blue
+ *    gradient reads as a solid dark block, NOT the glass in the
+ *    approved mockup (where the gradient blobs clearly show through).
+ *    v1.1.4 lowers it to 0.30 so the gradient visibly shows through,
+ *    softly blurred. A direct background override on the column is
+ *    added as belt-and-braces (same value as the token, so the two
+ *    cannot disagree). A subtle text-shadow keeps the white sidebar
+ *    text readable over the now-more-visible gradient. No sidebar
+ *    text, layout, or item is touched — only the surface.
+ *    NOTE: the blur uses .pI_x6G_sidebarCol, a build-specific hashed
+ *    CSS-module class — re-check it after any DSH version bump. If it
+ *    changes, the translucency remains via the token override and
+ *    only the blur drops out.
+ */
+:root,
+body {
+  --dsw-specific-sidebar-fill: rgba(15, 23, 42, 0.30) !important;
+}
+
+.pI_x6G_sidebarCol {
+  background: rgba(15, 23, 42, 0.30) !important;
+  backdrop-filter: blur(20px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.3) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 6. Content-page font readability (2026-11-07, v1.1.4): on content
+ *    pages (e.g. Plugins) the secondary/description text is a dim
+ *    light gray (--dsw-alias-label-secondary resolves to
+ *    --dsw-static-neutral-bluish-300) that washes out against the
+ *    bright gradient — the user flagged the font as "not clear".
+ *    The section titles (primary, near-white) ARE readable, which
+ *    proves near-white text works on this gradient. So the
+ *    secondary/tertiary/caption tokens are raised toward solid white,
+ *    scoped to the centre column (.pI_x6G_centerCol, grid-area 1/2 —
+ *    the content area; the sidebar is a sibling and is NOT affected),
+ *    plus a subtle dark text-shadow to lift the text off the bright
+ *    background. The composer card sits inside the centre column but
+ *    sets its own black label tokens with !important, so its text is
+ *    NOT affected; the menu overlay sets its own white tokens too.
+ *    The shadow is explicitly removed inside the composer card so the
+ *    black composer text stays crisp. Font family/size/layout: untouched.
+ */
+.pI_x6G_centerCol {
+  --dsw-alias-label-secondary: rgba(255, 255, 255, 0.92) !important;
+  --dsw-alias-label-tertiary: rgba(255, 255, 255, 0.78) !important;
+  --dsw-alias-label-caption: rgba(255, 255, 255, 0.65) !important;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.35);
+}
+
+[data-composer-card],
+[data-composer-card] * {
+  text-shadow: none !important;
+}
+
+/* 7. Composer caret (blinking text cursor) visibility (2026-11-07,
+ *    v1.1.4 — TOP PRIORITY, usability bug): the typed text IS visible,
+ *    but the blinking caret is invisible against the light glass.
+ *    Root cause: the composer input is a Lexical rich-text editor — a
+ *    <div contenteditable="true" role="textbox"
+ *    data-composer-input="true"> — NOT a <textarea>. The v1.1.2 rule
+ *    [data-composer-card] textarea never reached it (there is no
+ *    textarea in the composer except an inert one used for blocked /
+ *    no-workspace states), so the caret kept the dark theme's white
+ *    color (caret-color defaults to the element's color, which the
+ *    Lexical root inherits as white) — invisible on the light glass.
+ *    Fix: caret-color (and color, so the auto fallback is also dark)
+ *    near-black on the actual input element, and caret-color on the
+ *    card so every editable element inside it inherits a dark caret.
+ *    data-composer-input is a stable explicit attribute in the JSX
+ *    (verified in the live DSH 0.2.2-rc.1 bundle,
+ *    dsh-client-ui-conversation InputBar editor), NOT a hashed class.
+ *    Typed-text color is NOT changed (it is already visible and dark).
+ */
+[data-composer-input] {
+  caret-color: rgba(15, 23, 42, 0.92) !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+[data-composer-card] {
+  caret-color: rgba(15, 23, 42, 0.92) !important;
+}
+
+/* 8. User message bubble — frosted glass (2026-11-07, v1.1.5): the
+ *    bubble the user sends (e.g. "oi") is a solid dark block that
+ *    clashes with the glass/gradient aesthetic. It is rendered by the
+ *    primitives UserMessageBubble with a stable data-message-bubble
+ *    attribute (verified in the live DSH 0.2.2-rc.1 bundle,
+ *    dsh-client-ui-chat UserContent -> UserMessageBubble,
+ *    data-message-bubble=""). Give it the same frosted glass as the
+ *    composer (light glass + near-black text) so it fits the aesthetic:
+ *    same top-lit white gradient, blur, light border, top highlight
+ *    and soft shadow as the composer card; text uses the same black
+ *    hierarchy. Shape, position, alignment: untouched (the bubble
+ *    keeps its own border-radius and right alignment). The timestamp
+ *    and copy action below the bubble are outside the bubble element
+ *    and are NOT affected. Assistant messages are not bubbles and are
+ *    NOT affected.
+ */
+[data-message-bubble] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 16px rgba(15, 23, 42, 0.15) !important;
+  --dsw-alias-label-primary: rgba(15, 23, 42, 0.92) !important;
+  --dsw-alias-label-secondary: rgba(15, 23, 42, 0.72) !important;
+  --dsw-alias-label-tertiary: rgba(15, 23, 42, 0.55) !important;
+  --dsw-alias-label-caption: rgba(15, 23, 42, 0.45) !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+/* 9. Primary send/stop button — frosted glass (2026-11-07, v1.1.5):
+ *    the composer in the conversation view IS the same
+ *    [data-composer-card] InputBar as the empty view (verified in the
+ *    live bundle) — the glass DOES apply. What clashes is the primary
+ *    send/stop button: while generating it is a SOLID BLUE circle with
+ *    a white square (stop); when idle it is the up-arrow (send). Its
+ *    class is InputBar_module_css_default.primary -> uV2eYG_primary
+ *    (same CSS module as the card, verified in the live bundle).
+ *    Same frosted glass as the + button (section 3b), near-black icon
+ *    (the SVG uses currentColor, so setting color on the button turns
+ *    the icon dark; the svg rule is belt-and-braces). The structural
+ *    selector is a fallback: the primary button is the ONLY button in
+ *    the card WITHOUT aria-haspopup (the + button has
+ *    aria-haspopup="listbox", Full access / Select model have
+ *    aria-haspopup="menu"). + button and permission/model buttons are
+ *    NOT touched (excluded by the :not, and not named here).
+ *    Function/position/disabled state: untouched.
+ */
+[data-composer-card] .uV2eYG_primary,
+[data-composer-card] button[type="button"]:not([aria-haspopup]) {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(12px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 8px rgba(15, 23, 42, 0.12) !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+[data-composer-card] .uV2eYG_primary svg,
+[data-composer-card] button[type="button"]:not([aria-haspopup]) svg {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+[data-composer-card] .uV2eYG_primary:hover:not(:disabled),
+[data-composer-card] button[type="button"]:not([aria-haspopup]):hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 10. "深度求索中" running-status visibility (2026-11-07, v1.1.5):
+ *     the status line ("深度求索中，用时 10 秒 ···") is faint against
+ *     the bright gradient. It renders as <div data-chat-running>
+ *     (ChatView running, i18n chat.deepDiving / chat.deepDivingFor —
+ *     verified in the live DSH 0.2.2-rc.1 bundle, dsh-client-ui-chat).
+ *     It stays faint even though section 6 raised the centre-column
+ *     tokens, so it uses its own dimming: raise the text to solid
+ *     white, add a subtle dark shadow to lift it off the bright
+ *     gradient, and force opacity 1. Position, size, wording:
+ *     untouched.
+ */
+[data-chat-running] {
+  --dsw-alias-label-primary: rgba(255, 255, 255, 0.95) !important;
+  --dsw-alias-label-secondary: rgba(255, 255, 255, 0.92) !important;
+  --dsw-alias-label-tertiary: rgba(255, 255, 255, 0.85) !important;
+  --dsw-alias-label-caption: rgba(255, 255, 255, 0.75) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  opacity: 1 !important;
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.45) !important;
+}
+
+/* 11. "新会话" (New Conversation) button — frosted glass (2026-11-07,
+ *     v1.1.6): the pill button at the top of the LEFT sidebar, just
+ *     below the deepseek HARNESS logo. It is a solid dark pill
+ *     (background var(--dsw-alias-button-elevated-fill)) that reads as
+ *     a flat solid block against the dark-glass sidebar. Give it the
+ *     same frosted-glass family as the sidebar (section 5): dark
+ *     translucent fill + blur + light border + text shadow, so it
+ *     matches the sidebar. The button's own fill (0.30) composites
+ *     over the sidebar's 0.30, so the pill stays visibly distinct
+ *     (darker) while letting the gradient show through blurred; the
+ *     light border defines its edge. Text (+ icon) stays near-white
+ *     with a shadow so it stays readable on the dark glass. The hover
+ *     rule is overridden too, or the solid hover fill
+ *     (var(--dsw-alias-button-floating-hover)) would flash back on
+ *     mouse-over. Size/position/function: untouched.
+ *     Selector .hHd-Xa_newSession is the button's CSS-module class
+ *     (verified in the live DSH 0.2.2-rc.1 bundle,
+ *     dsh-client-ui-sidebar) — a hashed class, re-check after any
+ *     DSH version bump.
+ */
+.hHd-Xa_newSession {
+  background: rgba(15, 23, 42, 0.30) !important;
+  backdrop-filter: blur(20px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px rgba(15, 23, 42, 0.12) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+.hHd-Xa_newSession:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.45) !important;
+}

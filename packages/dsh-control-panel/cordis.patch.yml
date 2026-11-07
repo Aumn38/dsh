@@ -1,0 +1,4 @@
+# dsh-control-panel bundle patch
+- insert:
+    - id: control-panel
+      name: 'dsh-control-panel'
